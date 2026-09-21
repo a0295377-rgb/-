@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "أكاديميتي"
+description = "منصة تعليمية عراقية تمكّن المدرسين من إنشاء أكاديمياتهم الخاصة وإدارة المحتوى والطلاب والاختبارات، مع تجربة عربية كاملة للطلاب."
+version = "1.0.0"
+id = "artifacts/akademiyati"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23911
+
+[services.development]
+run = "pnpm --filter @workspace/akademiyati run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/akademiyati", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/akademiyati/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23911"
+BASE_PATH = "/"

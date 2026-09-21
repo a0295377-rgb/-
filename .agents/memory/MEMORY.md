@@ -1,0 +1,1 @@
+- [OpenAPI codegen collision](openapi-codegen-collision.md) — path params plus query-only generated types can collide; keep mixed list filters out of the first contract when Orval names overlap.
