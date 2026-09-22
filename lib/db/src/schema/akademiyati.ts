@@ -17,6 +17,15 @@ export const usersTable = pgTable("akademiyati_users", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const studentProfilesTable = pgTable("akademiyati_student_profiles", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  level: text("level").notNull(),
+  city: text("city").notNull().default("بغداد"),
+  averageScore: integer("average_score").notNull().default(0),
+  lastActivityAt: timestamp("last_activity_at", { withTimezone: true }),
+});
+
 export const teacherProfilesTable = pgTable("akademiyati_teacher_profiles", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
@@ -27,6 +36,32 @@ export const teacherProfilesTable = pgTable("akademiyati_teacher_profiles", {
   studentsCount: integer("students_count").notNull().default(0),
   rating: real("rating").notNull().default(5),
   verified: boolean("verified").notNull().default(false),
+  academyName: text("academy_name"),
+  shortBio: text("short_bio"),
+});
+
+export const coursesTable = pgTable("akademiyati_courses", {
+  id: text("id").primaryKey(),
+  teacherId: text("teacher_id").notNull(),
+  title: text("title").notNull(),
+  subject: text("subject").notNull(),
+  grade: text("grade").notNull(),
+  description: text("description").notNull().default(""),
+  published: boolean("published").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const lessonsTable = pgTable("akademiyati_lessons", {
+  id: text("id").primaryKey(),
+  courseId: text("course_id").notNull(),
+  teacherId: text("teacher_id").notNull(),
+  title: text("title").notNull(),
+  topic: text("topic").notNull(),
+  videoUrl: text("video_url"),
+  duration: text("duration"),
+  views: integer("views").notNull().default(0),
+  completionRate: integer("completion_rate").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const contentTable = pgTable("akademiyati_content", {
@@ -66,6 +101,24 @@ export const quizzesTable = pgTable("akademiyati_quizzes", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const questionsTable = pgTable("akademiyati_questions", {
+  id: text("id").primaryKey(),
+  quizId: text("quiz_id").notNull(),
+  text: text("text").notNull(),
+  options: jsonb("options").$type<string[]>().notNull(),
+  correctOption: integer("correct_option").notNull(),
+  explanation: text("explanation").notNull().default(""),
+});
+
+export const assignmentsTable = pgTable("akademiyati_assignments", {
+  id: text("id").primaryKey(),
+  teacherId: text("teacher_id").notNull(),
+  courseId: text("course_id"),
+  title: text("title").notNull(),
+  instructions: text("instructions").notNull(),
+  dueAt: timestamp("due_at", { withTimezone: true }),
+});
+
 export const quizAttemptsTable = pgTable("akademiyati_quiz_attempts", {
   id: text("id").primaryKey(),
   quizId: text("quiz_id").notNull(),
@@ -94,6 +147,44 @@ export const postsTable = pgTable("akademiyati_posts", {
   likes: integer("likes").notNull().default(0),
   commentsCount: integer("comments_count").notNull().default(0),
   pinned: boolean("pinned").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const commentsTable = pgTable("akademiyati_comments", {
+  id: text("id").primaryKey(),
+  postId: text("post_id").notNull(),
+  authorId: text("author_id").notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const notificationsTable = pgTable("akademiyati_notifications", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  readAt: timestamp("read_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const userProgressTable = pgTable("akademiyati_user_progress", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  contentId: text("content_id").notNull(),
+  progress: integer("progress").notNull().default(0),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const paymentsTable = pgTable("akademiyati_payments", {
+  id: text("id").primaryKey(),
+  teacherId: text("teacher_id").notNull(),
+  studentId: text("student_id").notNull(),
+  subscriptionId: text("subscription_id"),
+  amount: integer("amount").notNull(),
+  currency: text("currency").notNull().default("IQD"),
+  status: text("status").notNull().default("completed"),
+  provider: text("provider").notNull().default("demo"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

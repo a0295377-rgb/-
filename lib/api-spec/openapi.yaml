@@ -16,6 +16,8 @@ tags:
     description: Teacher discovery and academies
   - name: content
     description: Lessons and short videos
+  - name: teacher-management
+    description: Teacher students, revenue, and workspace management
   - name: quizzes
     description: Quiz creation and attempts
   - name: community
@@ -133,6 +135,90 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TeacherDashboard"
+  /teachers/{teacherId}/courses:
+    get:
+      operationId: listTeacherCourses
+      tags: [teacher-management]
+      summary: List teacher courses
+      parameters:
+        - $ref: "#/components/parameters/TeacherId"
+      responses:
+        "200":
+          description: Teacher courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeacherCourse"
+    post:
+      operationId: createTeacherCourse
+      tags: [teacher-management]
+      summary: Create a teacher course
+      parameters:
+        - $ref: "#/components/parameters/TeacherId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeacherCourseInput"
+      responses:
+        "201":
+          description: Created teacher course
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherCourse"
+  /teachers/{teacherId}/students:
+    get:
+      operationId: listTeacherStudents
+      tags: [teacher-management]
+      summary: List students enrolled in a teacher academy
+      parameters:
+        - $ref: "#/components/parameters/TeacherId"
+      responses:
+        "200":
+          description: Teacher students
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeacherStudent"
+  /teachers/{teacherId}/students/{studentId}:
+    get:
+      operationId: getTeacherStudent
+      tags: [teacher-management]
+      summary: Get a student's progress in a teacher academy
+      parameters:
+        - $ref: "#/components/parameters/TeacherId"
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Student progress detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherStudentDetail"
+  /teachers/{teacherId}/revenue:
+    get:
+      operationId: getTeacherRevenue
+      tags: [teacher-management]
+      summary: Get demo teacher revenue
+      parameters:
+        - $ref: "#/components/parameters/TeacherId"
+      responses:
+        "200":
+          description: Revenue summary and transactions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherRevenue"
   /teachers/{teacherId}/content:
     get:
       operationId: listTeacherContent
@@ -168,6 +254,65 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ContentItem"
+  /teachers/{teacherId}/content/{contentId}:
+    patch:
+      operationId: updateTeacherContent
+      tags: [content, teacher-management]
+      summary: Update teacher content
+      parameters:
+        - $ref: "#/components/parameters/TeacherId"
+        - name: contentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContentUpdate"
+      responses:
+        "200":
+          description: Updated content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentItem"
+    delete:
+      operationId: deleteTeacherContent
+      tags: [content, teacher-management]
+      summary: Delete teacher content
+      parameters:
+        - $ref: "#/components/parameters/TeacherId"
+        - name: contentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Content deleted
+  /teachers/{teacherId}/short-videos:
+    post:
+      operationId: createTeacherShortVideo
+      tags: [content, teacher-management]
+      summary: Publish a short video to the student feed
+      parameters:
+        - $ref: "#/components/parameters/TeacherId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShortVideoInput"
+      responses:
+        "201":
+          description: Published short video
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortVideo"
   /academies/{teacherId}/enroll:
     post:
       operationId: enrollInAcademy
@@ -394,6 +539,26 @@ components:
         name: { type: string }
         subject: { type: string }
         bio: { type: string }
+    TeacherCourse:
+      type: object
+      required: [id, title, subject, grade, description, studentsCount, lessonsCount, published]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        subject: { type: string }
+        grade: { type: string }
+        description: { type: string }
+        studentsCount: { type: integer }
+        lessonsCount: { type: integer }
+        published: { type: boolean }
+    TeacherCourseInput:
+      type: object
+      required: [title, subject, grade, description]
+      properties:
+        title: { type: string }
+        subject: { type: string }
+        grade: { type: string }
+        description: { type: string }
     ShortVideo:
       type: object
       required: [id, title, teacher, subject, topic, thumbnail, duration, views, likes, saved]
@@ -435,6 +600,24 @@ components:
         grade: { type: string }
         topic: { type: string }
         duration: { type: string }
+    ContentUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        type: { $ref: "#/components/schemas/ContentType" }
+        subject: { type: string }
+        grade: { type: string }
+        topic: { type: string }
+        duration: { type: string }
+    ShortVideoInput:
+      type: object
+      required: [title, subject, topic, duration]
+      properties:
+        title: { type: string }
+        subject: { type: string }
+        topic: { type: string }
+        duration: { type: string }
+        thumbnail: { type: string }
     Enrollment:
       type: object
       required: [id, teacherId, teacherName, progress, enrolledAt]
@@ -569,7 +752,7 @@ components:
         body: { type: string }
     TeacherDashboard:
       type: object
-      required: [studentsCount, views, subscribersCount, avgLessonWatch, avgQuizScore, activeStudents, topContent]
+      required: [studentsCount, views, subscribersCount, avgLessonWatch, avgQuizScore, activeStudents, averageScore, revenue, topContent, topMistakes]
       properties:
         studentsCount: { type: integer }
         views: { type: integer }
@@ -577,9 +760,66 @@ components:
         avgLessonWatch: { type: integer }
         avgQuizScore: { type: integer }
         activeStudents: { type: integer }
+        averageScore: { type: integer }
+        revenue: { type: number }
         topContent:
           type: array
           items: { $ref: "#/components/schemas/ContentItem" }
+        topMistakes:
+          type: array
+          items:
+            $ref: "#/components/schemas/MistakeTopic"
+    MistakeTopic:
+      type: object
+      required: [topic, errors, percentage]
+      properties:
+        topic: { type: string }
+        errors: { type: integer }
+        percentage: { type: integer }
+    TeacherStudent:
+      type: object
+      required: [id, name, level, lastActivity, averageScore, completion]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        level: { type: string }
+        lastActivity: { type: string }
+        averageScore: { type: integer }
+        completion: { type: integer }
+    TeacherStudentDetail:
+      allOf:
+        - $ref: "#/components/schemas/TeacherStudent"
+        - type: object
+          required: [subjects, recentAttempts, completedLessons]
+          properties:
+            subjects:
+              type: array
+              items: { $ref: "#/components/schemas/ProgressSubject" }
+            recentAttempts:
+              type: array
+              items: { $ref: "#/components/schemas/QuizAttempt" }
+            completedLessons: { type: integer }
+    RevenueTransaction:
+      type: object
+      required: [id, studentName, plan, amount, status, date]
+      properties:
+        id: { type: string }
+        studentName: { type: string }
+        plan: { type: string }
+        amount: { type: number }
+        status: { type: string }
+        date: { type: string }
+    TeacherRevenue:
+      type: object
+      required: [totalSales, netRevenue, subscriptions, activeSubscriptions, transactions]
+      properties:
+        totalSales: { type: number }
+        netRevenue: { type: number }
+        subscriptions: { type: integer }
+        activeSubscriptions: { type: integer }
+        transactions:
+          type: array
+          items: { $ref: "#/components/schemas/RevenueTransaction" }
     AdminOverview:
       type: object
       required: [students, teachers, pendingTeachers, content, reports, premiumSubscriptions]

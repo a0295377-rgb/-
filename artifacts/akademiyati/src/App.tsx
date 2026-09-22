@@ -1,11 +1,11 @@
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams } from 'wouter';
 import {
   ArrowLeft, ArrowUpRight, BarChart3, Bell, BookOpen, Bookmark, Check, CheckCircle2, ChevronLeft,
   CircleHelp, Clock3, FileText, Flame, GraduationCap, Heart, Home as HomeIcon, LayoutDashboard,
   Library, ListChecks, Menu, MessageCircle, MoreHorizontal, Play, Plus, Search, Settings as SettingsIcon,
-  ShieldCheck, Sparkles, Star, Target, ThumbsUp, TrendingUp, UserRound, Users, Video, X, Zap,
+  ShieldCheck, Sparkles, Star, Target, ThumbsUp, TrendingUp, UserRound, Users, Video, WalletCards, X, Zap,
 } from 'lucide-react';
 import {
   getGetAdminOverviewQueryKey, getGetStudentOverviewQueryKey, getGetStudentProgressQueryKey,
@@ -21,6 +21,14 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
+import {
+  TeacherAIPage,
+  TeacherCommunityPage,
+  TeacherContentPage,
+  TeacherDashboardPage,
+  TeacherRevenuePage,
+  TeacherStudentsPage,
+} from '@/pages/teacher-workspace';
 
 const queryClient = new QueryClient();
 
@@ -81,24 +89,46 @@ function LoadingGrid() {
 function Shell({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
   const [open, setOpen] = useState(false);
+  const [role, setRole] = useState<'student' | 'teacher' | 'admin'>(() => {
+    if (typeof window === 'undefined') return 'student';
+    const saved = window.localStorage.getItem('akademiyati-role');
+    return saved === 'teacher' || saved === 'admin' ? saved : 'student';
+  });
   const nav = [
     { href: '/', label: 'الرئيسية', icon: HomeIcon },
     { href: '/explore', label: 'اكتشف المدرسين', icon: Search },
     { href: '/quizzes', label: 'الاختبارات', icon: CircleHelp },
     { href: '/progress', label: 'تقدّمي', icon: TrendingUp },
   ];
-  const teacherNav = [{ href: '/teacher', label: 'لوحة المدرّس', icon: LayoutDashboard }, { href: '/teacher/content', label: 'المحتوى', icon: FileText }, { href: '/teacher/quizzes', label: 'الاختبارات', icon: ListChecks }];
-  const isTeacher = location.startsWith('/teacher');
+  const teacherNav = [
+    { href: '/teacher', label: 'لوحة المدرّس', icon: LayoutDashboard },
+    { href: '/teacher/content', label: 'المحتوى', icon: FileText },
+    { href: '/teacher/students', label: 'طلابي', icon: Users },
+    { href: '/teacher/revenue', label: 'الأرباح', icon: WalletCards },
+    { href: '/teacher/community', label: 'المجتمع', icon: MessageCircle },
+    { href: '/teacher/ai', label: 'مساعد AI', icon: Sparkles },
+  ];
+  const adminNav = [{ href: '/admin', label: 'لوحة الإدارة', icon: ShieldCheck }];
+  const isTeacher = role === 'teacher' || location.startsWith('/teacher');
+  const isAdmin = role === 'admin' || location.startsWith('/admin');
+  useEffect(() => {
+    const syncRole = () => {
+      const saved = window.localStorage.getItem('akademiyati-role');
+      if (saved === 'student' || saved === 'teacher' || saved === 'admin') setRole(saved);
+    };
+    window.addEventListener('akademiyati-role-change', syncRole);
+    return () => window.removeEventListener('akademiyati-role-change', syncRole);
+  }, []);
   return <div className="app-shell noise overflow-x-hidden" dir="rtl">
     {open && <button aria-label="إغلاق القائمة" className="fixed inset-0 z-30 bg-black/45 md:hidden" onClick={() => setOpen(false)} data-testid="button-menu-backdrop" />}
     <aside dir="rtl" className={`fixed inset-y-0 right-0 z-40 flex h-dvh w-[min(19rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] flex-col overflow-y-auto overflow-x-hidden border-l border-white/10 bg-[hsl(var(--sidebar))] p-4 text-sidebar-foreground shadow-lift transition-transform sm:w-72 sm:p-6 md:translate-x-0 ${open ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}>
       <div className="flex shrink-0 items-center justify-between gap-3"><Link href="/" onClick={() => setOpen(false)} className="flex min-w-0 items-center gap-3" data-testid="link-brand"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-lg font-black text-foreground">أ</div><div className="min-w-0"><p className="text-sm font-black">أكاديميتي</p><p className="break-words text-[9px] leading-5 text-sidebar-foreground/55">طريقك الأقرب للفهم</p></div></Link><button className="shrink-0 rounded-lg p-2 hover:bg-white/10 md:hidden" onClick={() => setOpen(false)} data-testid="button-close-menu"><X className="h-5 w-5" /></button></div>
-      <div className="mt-8 shrink-0 sm:mt-10"><p className="mb-3 px-3 text-[10px] font-bold tracking-[.16em] text-sidebar-foreground/40">{isTeacher ? 'مساحة المدرّس' : 'مساحة الطالب'}</p>{(isTeacher ? teacherNav : nav).map(({ href, label, icon: Icon }) => <Link key={href} href={href} onClick={() => setOpen(false)} data-testid={`link-nav-${label}`} className={`mb-1 flex min-w-0 w-full items-start gap-3 rounded-xl px-3 py-3 text-xs font-bold leading-6 transition ${location === href ? 'bg-primary text-primary-foreground' : 'text-sidebar-foreground/70 hover:bg-white/5 hover:text-sidebar-foreground'}`}><Icon className="mt-1 h-[17px] w-[17px] shrink-0" /><span className="min-w-0 flex-1 whitespace-normal break-words">{label}</span></Link>)}</div>
-      {!isTeacher && <div className="mt-7 shrink-0 sm:mt-8"><p className="mb-3 px-3 text-[10px] font-bold tracking-[.16em] text-sidebar-foreground/40">مساحاتك</p><Link href="/academy/1" onClick={() => setOpen(false)} data-testid="link-my-academy" className="flex min-w-0 w-full items-center gap-3 rounded-xl bg-white/5 px-3 py-3 text-xs font-bold leading-6"><Avatar name="زهراء عبد الرزاق" size="sm" /><span className="min-w-0 flex-1 whitespace-normal break-words">أكاديمية زهراء</span><ChevronLeft className="mr-auto h-4 w-4 shrink-0 opacity-50" /></Link></div>}
+      <div className="mt-8 shrink-0 sm:mt-10"><p className="mb-3 px-3 text-[10px] font-bold tracking-[.16em] text-sidebar-foreground/40">{isAdmin ? 'مساحة الإدارة' : isTeacher ? 'مساحة المدرّس' : 'مساحة الطالب'}</p>{(isAdmin ? adminNav : isTeacher ? teacherNav : nav).map(({ href, label, icon: Icon }) => <Link key={href} href={href} onClick={() => setOpen(false)} data-testid={`link-nav-${label}`} className={`mb-1 flex min-w-0 w-full items-start gap-3 rounded-xl px-3 py-3 text-xs font-bold leading-6 transition ${location === href ? 'bg-primary text-primary-foreground' : 'text-sidebar-foreground/70 hover:bg-white/5 hover:text-sidebar-foreground'}`}><Icon className="mt-1 h-[17px] w-[17px] shrink-0" /><span className="min-w-0 flex-1 whitespace-normal break-words">{label}</span></Link>)}</div>
+      {!isTeacher && !isAdmin && <div className="mt-7 shrink-0 sm:mt-8"><p className="mb-3 px-3 text-[10px] font-bold tracking-[.16em] text-sidebar-foreground/40">مساحاتك</p><Link href="/academy/1" onClick={() => setOpen(false)} data-testid="link-my-academy" className="flex min-w-0 w-full items-center gap-3 rounded-xl bg-white/5 px-3 py-3 text-xs font-bold leading-6"><Avatar name="زهراء عبد الرزاق" size="sm" /><span className="min-w-0 flex-1 whitespace-normal break-words">أكاديمية زهراء</span><ChevronLeft className="mr-auto h-4 w-4 shrink-0 opacity-50" /></Link></div>}
       <div className="mt-auto shrink-0 pt-7 sm:pt-10"><Link href="/settings" onClick={() => setOpen(false)} data-testid="link-settings" className="flex min-w-0 w-full items-start gap-3 rounded-xl px-3 py-3 text-xs font-bold leading-6 text-sidebar-foreground/65 hover:bg-white/5"><SettingsIcon className="mt-1 h-4 w-4 shrink-0" /><span className="min-w-0 flex-1 whitespace-normal break-words">الإعدادات</span></Link><div className="mt-3 flex min-w-0 items-center gap-3 border-t border-white/10 pt-4"><Avatar name="سارة أحمد" size="sm" accent="amber" /><div className="min-w-0 flex-1"><p className="truncate text-xs font-bold">سارة أحمد</p><p className="break-words text-[10px] leading-5 text-sidebar-foreground/45">السادس العلمي</p></div><MoreHorizontal className="mr-auto h-4 w-4 shrink-0 opacity-50" /></div></div>
     </aside>
-    <div className="md:mr-72"><header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b bg-background/85 px-4 backdrop-blur-xl md:px-8"><button onClick={() => setOpen(true)} className="rounded-xl p-2 md:hidden" data-testid="button-open-menu"><Menu className="h-5 w-5" /></button><div className="hidden md:block"><p className="text-xs font-bold text-muted-foreground">الأحد، ١٦ حزيران ٢٠٢٤</p><p className="mt-0.5 text-sm font-extrabold">{isTeacher ? 'مرحباً أستاذة زهراء' : 'صباح الخير، سارة'}</p></div><div className="mr-auto flex items-center gap-2 md:mr-0"><button data-testid="button-notifications" className="relative rounded-xl border bg-card p-2.5"><Bell className="h-4 w-4" /><span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-accent" /></button><Link href="/settings" data-testid="link-header-profile" className="hidden rounded-xl border bg-card p-2.5 sm:block"><UserRound className="h-4 w-4" /></Link></div></header><main className="page-in min-h-[calc(100dvh-72px)] px-4 pb-24 pt-6 md:px-8 md:pb-10 lg:px-12">{children}</main></div>
-    <nav className="fixed bottom-3 left-3 right-3 z-30 flex items-center justify-around rounded-2xl border bg-card/95 p-2 shadow-lift backdrop-blur md:hidden">{nav.slice(0, 4).map(({ href, label, icon: Icon }) => <Link href={href} key={href} data-testid={`link-mobile-${label}`} className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-[9px] font-bold ${location === href ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}><Icon className="h-4 w-4" />{label}</Link>)}</nav>
+    <div className="md:mr-72"><header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b bg-background/85 px-4 backdrop-blur-xl md:px-8"><button onClick={() => setOpen(true)} className="rounded-xl p-2 md:hidden" data-testid="button-open-menu"><Menu className="h-5 w-5" /></button><div className="hidden md:block"><p className="text-xs font-bold text-muted-foreground">الأحد، ١٦ حزيران ٢٠٢٤</p><p className="mt-0.5 text-sm font-extrabold">{isAdmin ? 'مرحباً بك في إدارة أكاديميتي' : isTeacher ? 'مرحباً أستاذ أحمد' : 'صباح الخير، سارة'}</p></div><div className="mr-auto flex items-center gap-2 md:mr-0"><span className="hidden rounded-full bg-secondary/35 px-3 py-2 text-[10px] font-bold text-primary sm:inline-flex" data-testid="text-current-role">{isAdmin ? 'Admin' : isTeacher ? 'Teacher' : 'Student'}</span><button data-testid="button-notifications" className="relative rounded-xl border bg-card p-2.5"><Bell className="h-4 w-4" /><span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-accent" /></button><Link href="/settings" data-testid="link-header-profile" className="hidden rounded-xl border bg-card p-2.5 sm:block"><UserRound className="h-4 w-4" /></Link></div></header><main className="page-in min-h-[calc(100dvh-72px)] px-4 pb-24 pt-6 md:px-8 md:pb-10 lg:px-12">{children}</main></div>
+    <nav className="fixed bottom-3 left-3 right-3 z-30 flex items-center justify-around rounded-2xl border bg-card/95 p-2 shadow-lift backdrop-blur md:hidden">{(isAdmin ? adminNav : isTeacher ? teacherNav.slice(0, 4) : nav.slice(0, 4)).map(({ href, label, icon: Icon }) => <Link href={href} key={href} data-testid={`link-mobile-${label}`} className={`flex min-w-0 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[9px] font-bold ${location === href ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}><Icon className="h-4 w-4" /><span className="max-w-[4.5rem] truncate">{label}</span></Link>)}</nav>
   </div>;
 }
 
@@ -224,10 +254,16 @@ function Onboarding() {
   const create = useCreateTeacher();
   const cache = useQueryClient();
   const [, setLocation] = useLocation();
-  const [role, setRole] = useState<'student'|'teacher'|null>(null);
+  const [role, setRole] = useState<'student'|'teacher'|'admin'|null>(null);
   const [name, setName] = useState('');
-  const finish = () => { if (role === 'teacher') create.mutate({ data: { name: name || 'مدرس جديد', subject: 'الرياضيات', bio: 'مدرس يشارك المعرفة بوضوح.' } }, { onSuccess: () => { cache.invalidateQueries({ queryKey: getListTeachersQueryKey() }); setLocation('/teacher'); }, onError: () => setLocation('/teacher') }); else setLocation('/'); };
-  return <div className="flex min-h-[calc(100dvh-120px)] items-center justify-center"><div className="w-full max-w-2xl"><div className="text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-2xl font-black text-primary-foreground">أ</div><p className="mt-6 text-[10px] font-bold tracking-[.16em] text-accent">أول خطوة في أكاديميتي</p><h1 className="mt-2 text-3xl font-extrabold">كيف تحب تستخدم المنصة؟</h1><p className="mt-3 text-xs text-muted-foreground">نجهّز لك مساحة تناسب طريقتك.</p></div><div className="mt-10 grid gap-4 sm:grid-cols-2"><button onClick={() => setRole('student')} data-testid="button-role-student" className={`rounded-3xl border p-6 text-right transition ${role === 'student' ? 'border-primary bg-primary/10 shadow-soft' : 'bg-card hover:-translate-y-1'}`}><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/50 text-primary"><BookOpen className="h-6 w-6" /></div><h2 className="mt-6 font-extrabold">أنا طالب</h2><p className="mt-2 text-xs leading-6 text-muted-foreground">أكتشف مدرسين، أتابع دروسي، وأقيس تقدّمي.</p>{role === 'student' && <Check className="mt-5 h-5 w-5 text-primary" />}</button><button onClick={() => setRole('teacher')} data-testid="button-role-teacher" className={`rounded-3xl border p-6 text-right transition ${role === 'teacher' ? 'border-primary bg-primary/10 shadow-soft' : 'bg-card hover:-translate-y-1'}`}><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/15 text-accent"><GraduationCap className="h-6 w-6" /></div><h2 className="mt-6 font-extrabold">أنا مدرس</h2><p className="mt-2 text-xs leading-6 text-muted-foreground">أبني أكاديميتي، أنشر دروسي، وأتابع طلابي.</p>{role === 'teacher' && <Check className="mt-5 h-5 w-5 text-primary" />}</button></div>{role && <div className="mt-6 rounded-3xl border bg-card p-5 shadow-soft">{role === 'teacher' && <label className="block text-xs font-bold">اسمك أو اسم الأكاديمية<input data-testid="input-onboarding-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="مثلاً: أ. زهراء عبد الرزاق" className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-xs outline-none focus:border-primary" /></label>}<Button onClick={finish} disabled={create.isPending} className="mt-4 w-full" testId="button-finish-onboarding">{create.isPending ? 'جارٍ تجهيز مساحتك...' : 'ابدأ رحلتك'}</Button></div>}</div></div>;
+  const finish = () => {
+    if (!role) return;
+    window.localStorage.setItem('akademiyati-role', role);
+    window.dispatchEvent(new Event('akademiyati-role-change'));
+    if (role === 'teacher') create.mutate({ data: { name: name || 'مدرس جديد', subject: 'الرياضيات', bio: 'مدرس يشارك المعرفة بوضوح.' } }, { onSuccess: () => { cache.invalidateQueries({ queryKey: getListTeachersQueryKey() }); setLocation('/teacher'); }, onError: () => setLocation('/teacher') });
+    else setLocation(role === 'admin' ? '/admin' : '/');
+  };
+  return <div className="flex min-h-[calc(100dvh-120px)] items-center justify-center"><div className="w-full max-w-3xl"><div className="text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-2xl font-black text-primary-foreground">أ</div><p className="mt-6 text-[10px] font-bold tracking-[.16em] text-accent">أول خطوة في أكاديميتي</p><h1 className="mt-2 text-3xl font-extrabold">اختر مساحة العمل المناسبة لك</h1><p className="mt-3 text-xs text-muted-foreground">كل دور يرى واجهته وأدواته الخاصة.</p></div><div className="mt-10 grid gap-4 md:grid-cols-3"><button onClick={() => setRole('student')} data-testid="button-role-student" className={`rounded-3xl border p-6 text-right transition ${role === 'student' ? 'border-primary bg-primary/10 shadow-soft' : 'bg-card hover:-translate-y-1'}`}><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/50 text-primary"><BookOpen className="h-6 w-6" /></div><h2 className="mt-6 font-extrabold">Student · طالب</h2><p className="mt-2 text-xs leading-6 text-muted-foreground">أكتشف مدرسين، أتابع دروسي، وأقيس تقدّمي.</p>{role === 'student' && <Check className="mt-5 h-5 w-5 text-primary" />}</button><button onClick={() => setRole('teacher')} data-testid="button-role-teacher" className={`rounded-3xl border p-6 text-right transition ${role === 'teacher' ? 'border-primary bg-primary/10 shadow-soft' : 'bg-card hover:-translate-y-1'}`}><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/15 text-accent"><GraduationCap className="h-6 w-6" /></div><h2 className="mt-6 font-extrabold">Teacher · مدرس</h2><p className="mt-2 text-xs leading-6 text-muted-foreground">أبني أكاديميتي، أنشر دروسي، وأتابع طلابي.</p>{role === 'teacher' && <Check className="mt-5 h-5 w-5 text-primary" />}</button><button onClick={() => setRole('admin')} data-testid="button-role-admin" className={`rounded-3xl border p-6 text-right transition ${role === 'admin' ? 'border-primary bg-primary/10 shadow-soft' : 'bg-card hover:-translate-y-1'}`}><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary"><ShieldCheck className="h-6 w-6" /></div><h2 className="mt-6 font-extrabold">Admin · إدارة</h2><p className="mt-2 text-xs leading-6 text-muted-foreground">أراجع المدرسين والمحتوى وأتابع صحة المنصة.</p>{role === 'admin' && <Check className="mt-5 h-5 w-5 text-primary" />}</button></div>{role && <div className="mt-6 rounded-3xl border bg-card p-5 shadow-soft">{role === 'teacher' && <label className="block text-xs font-bold">اسمك أو اسم الأكاديمية<input data-testid="input-onboarding-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="مثلاً: أ. زهراء عبد الرزاق" className="mt-2 w-full rounded-xl border bg-background px-4 py-3 text-xs outline-none focus:border-primary" /></label>}<Button onClick={finish} disabled={create.isPending} className="mt-4 w-full" testId="button-finish-onboarding">{create.isPending ? 'جارٍ تجهيز مساحتك...' : 'دخول إلى المساحة'}</Button></div>}</div></div>;
 }
 
 function Settings() {
@@ -243,7 +279,7 @@ function AcademyRoute() { return <Academy />; }
 function Router() {
   const [location] = useLocation();
   return <ErrorBoundary resetKey={location}><Shell><Switch>
-    <Route path="/" component={Home} /><Route path="/explore" component={Explore} /><Route path="/academy/:teacherId/content" component={ContentRoute} /><Route path="/academy/:teacherId" component={AcademyRoute} /><Route path="/quizzes" component={Quizzes} /><Route path="/quizzes/:quizId" component={QuizAttempt} /><Route path="/progress" component={Progress} /><Route path="/community/:teacherId" component={Community} /><Route path="/teacher/content" component={TeacherContent} /><Route path="/teacher/quizzes" component={TeacherQuizzes} /><Route path="/teacher" component={TeacherDashboard} /><Route path="/admin" component={Admin} /><Route path="/onboarding" component={Onboarding} /><Route path="/settings" component={Settings} /><Route component={NotFound} />
+    <Route path="/" component={Home} /><Route path="/explore" component={Explore} /><Route path="/academy/:teacherId/content" component={ContentRoute} /><Route path="/academy/:teacherId" component={AcademyRoute} /><Route path="/quizzes" component={Quizzes} /><Route path="/quizzes/:quizId" component={QuizAttempt} /><Route path="/progress" component={Progress} /><Route path="/community/:teacherId" component={Community} /><Route path="/teacher/content" component={TeacherContentPage} /><Route path="/teacher/quizzes" component={TeacherQuizzes} /><Route path="/teacher/students" component={TeacherStudentsPage} /><Route path="/teacher/revenue" component={TeacherRevenuePage} /><Route path="/teacher/community" component={TeacherCommunityPage} /><Route path="/teacher/ai" component={TeacherAIPage} /><Route path="/teacher" component={TeacherDashboardPage} /><Route path="/admin" component={Admin} /><Route path="/onboarding" component={Onboarding} /><Route path="/settings" component={Settings} /><Route component={NotFound} />
   </Switch></Shell></ErrorBoundary>;
 }
 

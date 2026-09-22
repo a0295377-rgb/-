@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ContentItem } from './contentItem';
+import type { MistakeTopic } from './mistakeTopic';
 
 export interface TeacherDashboard {
   studentsCount: number;
@@ -14,5 +15,8 @@ export interface TeacherDashboard {
   avgLessonWatch: number;
   avgQuizScore: number;
   activeStudents: number;
+  averageScore: number;
+  revenue: number;
   topContent: ContentItem[];
+  topMistakes: MistakeTopic[];
 }

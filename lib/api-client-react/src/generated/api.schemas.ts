@@ -33,6 +33,24 @@ export interface TeacherInput {
   bio: string;
 }
 
+export interface TeacherCourse {
+  id: string;
+  title: string;
+  subject: string;
+  grade: string;
+  description: string;
+  studentsCount: number;
+  lessonsCount: number;
+  published: boolean;
+}
+
+export interface TeacherCourseInput {
+  title: string;
+  subject: string;
+  grade: string;
+  description: string;
+}
+
 export interface ShortVideo {
   id: string;
   title: string;
@@ -80,6 +98,23 @@ export interface ContentInput {
   grade: string;
   topic: string;
   duration?: string;
+}
+
+export interface ContentUpdate {
+  title?: string;
+  type?: ContentType;
+  subject?: string;
+  grade?: string;
+  topic?: string;
+  duration?: string;
+}
+
+export interface ShortVideoInput {
+  title: string;
+  subject: string;
+  topic: string;
+  duration: string;
+  thumbnail?: string;
 }
 
 export interface Enrollment {
@@ -179,6 +214,12 @@ export interface PostInput {
   body: string;
 }
 
+export interface MistakeTopic {
+  topic: string;
+  errors: number;
+  percentage: number;
+}
+
 export interface TeacherDashboard {
   studentsCount: number;
   views: number;
@@ -186,7 +227,42 @@ export interface TeacherDashboard {
   avgLessonWatch: number;
   avgQuizScore: number;
   activeStudents: number;
+  averageScore: number;
+  revenue: number;
   topContent: ContentItem[];
+  topMistakes: MistakeTopic[];
+}
+
+export interface TeacherStudent {
+  id: string;
+  name: string;
+  level: string;
+  lastActivity: string;
+  averageScore: number;
+  completion: number;
+}
+
+export type TeacherStudentDetail = TeacherStudent & {
+  subjects: ProgressSubject[];
+  recentAttempts: QuizAttempt[];
+  completedLessons: number;
+};
+
+export interface RevenueTransaction {
+  id: string;
+  studentName: string;
+  plan: string;
+  amount: number;
+  status: string;
+  date: string;
+}
+
+export interface TeacherRevenue {
+  totalSales: number;
+  netRevenue: number;
+  subscriptions: number;
+  activeSubscriptions: number;
+  transactions: RevenueTransaction[];
 }
 
 export interface AdminOverview {

@@ -23,6 +23,10 @@ import {
   GetStudentFeedResponse,
   GetTeacherDashboardParams,
   GetTeacherDashboardResponse,
+  GetTeacherRevenueParams,
+  GetTeacherRevenueResponse,
+  GetTeacherStudentParams,
+  GetTeacherStudentResponse,
   GetTeacherParams,
   GetTeacherResponse,
   ListCommunityPostsParams,
@@ -30,6 +34,8 @@ import {
   ListQuizzesResponse,
   ListTeacherContentParams,
   ListTeacherContentResponse,
+  ListTeacherStudentsParams,
+  ListTeacherStudentsResponse,
   ListTeachersQueryParams,
   ListTeachersResponse,
   SubmitQuizAttemptBody,
@@ -38,6 +44,12 @@ import {
   UpdateStudentSubscriptionBody,
   UpdateStudentSubscriptionParams,
   UpdateStudentSubscriptionResponse,
+  UpdateTeacherContentParams,
+  UpdateTeacherContentResponse,
+  DeleteTeacherContentParams,
+  CreateTeacherShortVideoParams,
+  CreateTeacherShortVideoBody,
+  CreateTeacherShortVideoResponse,
 } from "@workspace/api-zod";
 
 type Teacher = {
@@ -278,6 +290,19 @@ const posts = [
   },
 ];
 
+const teacherStudents = [
+  { id: "student-demo", name: "نور الهدى", level: "السادس العلمي", lastActivity: "منذ 12 دقيقة", averageScore: 91, completion: 82 },
+  { id: "student-mohammed", name: "محمد علي", level: "السادس العلمي", lastActivity: "أمس", averageScore: 78, completion: 64 },
+  { id: "student-zainab", name: "زينب كريم", level: "الخامس العلمي", lastActivity: "منذ 3 أيام", averageScore: 86, completion: 71 },
+  { id: "student-hassan", name: "حسن فاضل", level: "السادس العلمي", lastActivity: "منذ أسبوع", averageScore: 73, completion: 49 },
+];
+
+const revenueTransactions = [
+  { id: "txn-1001", studentName: "نور الهدى", plan: "اشتراك شهري", amount: 15000, status: "مكتملة", date: "اليوم، 10:42" },
+  { id: "txn-1002", studentName: "زينب كريم", plan: "اشتراك شهري", amount: 15000, status: "مكتملة", date: "أمس، 18:10" },
+  { id: "txn-1003", studentName: "محمد علي", plan: "اشتراك فصلي", amount: 40000, status: "مكتملة", date: "18 حزيران" },
+];
+
 const id = (prefix: string) => `${prefix}-${Date.now()}-${Math.round(Math.random() * 1000)}`;
 
 const toSummary = (quiz: Quiz) => ({
@@ -379,9 +404,65 @@ router.get("/teachers/:teacherId/dashboard", (req, res) => {
       avgLessonWatch: 76,
       avgQuizScore: 84,
       activeStudents: 1840,
+      averageScore: 84,
+      revenue: 12450000,
       topContent: content.slice(0, 3),
+      topMistakes: [
+        { topic: "التفاضل", errors: 182, percentage: 34 },
+        { topic: "المتجهات", errors: 121, percentage: 23 },
+        { topic: "الدوال", errors: 96, percentage: 18 },
+      ],
     }),
   );
+});
+
+router.get("/teachers/:teacherId/students", (req, res) => {
+  const params = ListTeacherStudentsParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  res.json(ListTeacherStudentsResponse.parse(teacherStudents));
+});
+
+router.get("/teachers/:teacherId/students/:studentId", (req, res) => {
+  const params = GetTeacherStudentParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const student = teacherStudents.find((item) => item.id === params.data.studentId);
+  if (!student) {
+    res.status(404).json({ error: "Student not found" });
+    return;
+  }
+  res.json(GetTeacherStudentResponse.parse({
+    ...student,
+    completedLessons: 32,
+    subjects: [
+      { name: "الرياضيات", progress: student.completion + 5, score: student.averageScore },
+      { name: "الفيزياء", progress: Math.max(0, student.completion - 8), score: Math.max(0, student.averageScore - 6) },
+      { name: "اللغة العربية", progress: Math.min(100, student.completion + 12), score: Math.min(100, student.averageScore + 3) },
+    ],
+    recentAttempts: [
+      { id: `attempt-${student.id}-1`, quizId: "quiz-1", score: student.averageScore, correctCount: 7, totalCount: 8, answers: [1, 2, 0], completedAt: new Date().toISOString() },
+    ],
+  }));
+});
+
+router.get("/teachers/:teacherId/revenue", (req, res) => {
+  const params = GetTeacherRevenueParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  res.json(GetTeacherRevenueResponse.parse({
+    totalSales: 14800000,
+    netRevenue: 12450000,
+    subscriptions: 732,
+    activeSubscriptions: 620,
+    transactions: revenueTransactions,
+  }));
 });
 
 router.get("/teachers/:teacherId/content", (req, res) => {
@@ -414,6 +495,61 @@ router.post("/teachers/:teacherId/content", (req, res) => {
   };
   content.unshift(item);
   res.status(201).json(CreateContentResponse.parse(item));
+});
+
+router.patch("/teachers/:teacherId/content/:contentId", (req, res) => {
+  const params = UpdateTeacherContentParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const index = content.findIndex((item) => item.id === params.data.contentId);
+  if (index < 0) {
+    res.status(404).json({ error: "Content not found" });
+    return;
+  }
+  const updated = { ...content[index], ...req.body };
+  content[index] = updated;
+  res.json(UpdateTeacherContentResponse.parse(updated));
+});
+
+router.delete("/teachers/:teacherId/content/:contentId", (req, res) => {
+  const params = DeleteTeacherContentParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const index = content.findIndex((item) => item.id === params.data.contentId);
+  if (index < 0) {
+    res.status(404).json({ error: "Content not found" });
+    return;
+  }
+  content.splice(index, 1);
+  res.status(204).send();
+});
+
+router.post("/teachers/:teacherId/short-videos", (req, res) => {
+  const params = CreateTeacherShortVideoParams.safeParse(req.params);
+  const body = CreateTeacherShortVideoBody.safeParse(req.body);
+  if (!params.success || !body.success) {
+    res.status(400).json({ error: "Invalid short video payload" });
+    return;
+  }
+  const teacher = teachers.find((item) => item.id === params.data.teacherId) ?? teachers[0];
+  const video = {
+    id: id("video"),
+    title: body.data.title,
+    teacher,
+    subject: body.data.subject,
+    topic: body.data.topic,
+    thumbnail: body.data.thumbnail ?? "",
+    duration: body.data.duration,
+    views: 0,
+    likes: 0,
+    saved: false,
+  };
+  videos.unshift(video);
+  res.status(201).json(CreateTeacherShortVideoResponse.parse(video));
 });
 
 router.post("/academies/:teacherId/enroll", (req, res) => {

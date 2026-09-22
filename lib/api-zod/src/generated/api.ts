@@ -170,6 +170,8 @@ export const GetTeacherDashboardResponse = zod.object({
   "avgLessonWatch": zod.number().int(),
   "avgQuizScore": zod.number().int(),
   "activeStudents": zod.number().int(),
+  "averageScore": zod.number().int(),
+  "revenue": zod.number(),
   "topContent": zod.array(zod.object({
   "id": zod.string(),
   "title": zod.string(),
@@ -181,6 +183,132 @@ export const GetTeacherDashboardResponse = zod.object({
   "views": zod.number().int(),
   "duration": zod.string().nullish(),
   "thumbnail": zod.string().nullish()
+})),
+  "topMistakes": zod.array(zod.object({
+  "topic": zod.string(),
+  "errors": zod.number().int(),
+  "percentage": zod.number().int()
+}))
+})
+
+
+/**
+ * @summary List teacher courses
+ */
+export const ListTeacherCoursesParams = zod.object({
+  "teacherId": zod.coerce.string()
+})
+
+export const ListTeacherCoursesResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "grade": zod.string(),
+  "description": zod.string(),
+  "studentsCount": zod.number().int(),
+  "lessonsCount": zod.number().int(),
+  "published": zod.boolean()
+})
+export const ListTeacherCoursesResponse = zod.array(ListTeacherCoursesResponseItem)
+
+
+/**
+ * @summary Create a teacher course
+ */
+export const CreateTeacherCourseParams = zod.object({
+  "teacherId": zod.coerce.string()
+})
+
+export const CreateTeacherCourseBody = zod.object({
+  "title": zod.string(),
+  "subject": zod.string(),
+  "grade": zod.string(),
+  "description": zod.string()
+})
+
+export const CreateTeacherCourseResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "grade": zod.string(),
+  "description": zod.string(),
+  "studentsCount": zod.number().int(),
+  "lessonsCount": zod.number().int(),
+  "published": zod.boolean()
+})
+
+
+/**
+ * @summary List students enrolled in a teacher academy
+ */
+export const ListTeacherStudentsParams = zod.object({
+  "teacherId": zod.coerce.string()
+})
+
+export const ListTeacherStudentsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "level": zod.string(),
+  "lastActivity": zod.string(),
+  "averageScore": zod.number().int(),
+  "completion": zod.number().int()
+})
+export const ListTeacherStudentsResponse = zod.array(ListTeacherStudentsResponseItem)
+
+
+/**
+ * @summary Get a student's progress in a teacher academy
+ */
+export const GetTeacherStudentParams = zod.object({
+  "teacherId": zod.coerce.string(),
+  "studentId": zod.coerce.string()
+})
+
+export const GetTeacherStudentResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "level": zod.string(),
+  "lastActivity": zod.string(),
+  "averageScore": zod.number().int(),
+  "completion": zod.number().int()
+}).and(zod.object({
+  "subjects": zod.array(zod.object({
+  "name": zod.string(),
+  "progress": zod.number().int(),
+  "score": zod.number().int()
+})),
+  "recentAttempts": zod.array(zod.object({
+  "id": zod.string(),
+  "quizId": zod.string(),
+  "score": zod.number().int(),
+  "correctCount": zod.number().int(),
+  "totalCount": zod.number().int(),
+  "answers": zod.array(zod.number().int()),
+  "completedAt": zod.string()
+})),
+  "completedLessons": zod.number().int()
+}))
+
+
+/**
+ * @summary Get demo teacher revenue
+ */
+export const GetTeacherRevenueParams = zod.object({
+  "teacherId": zod.coerce.string()
+})
+
+export const GetTeacherRevenueResponse = zod.object({
+  "totalSales": zod.number(),
+  "netRevenue": zod.number(),
+  "subscriptions": zod.number().int(),
+  "activeSubscriptions": zod.number().int(),
+  "transactions": zod.array(zod.object({
+  "id": zod.string(),
+  "studentName": zod.string(),
+  "plan": zod.string(),
+  "amount": zod.number(),
+  "status": zod.string(),
+  "date": zod.string()
 }))
 })
 
@@ -234,6 +362,87 @@ export const CreateContentResponse = zod.object({
   "views": zod.number().int(),
   "duration": zod.string().nullish(),
   "thumbnail": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update teacher content
+ */
+export const UpdateTeacherContentParams = zod.object({
+  "teacherId": zod.coerce.string(),
+  "contentId": zod.coerce.string()
+})
+
+export const UpdateTeacherContentBody = zod.object({
+  "title": zod.string().optional(),
+  "type": zod.enum(['lesson', 'short', 'pdf', 'quiz', 'assignment', 'post']).optional(),
+  "subject": zod.string().optional(),
+  "grade": zod.string().optional(),
+  "topic": zod.string().optional(),
+  "duration": zod.string().optional()
+})
+
+export const UpdateTeacherContentResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "type": zod.enum(['lesson', 'short', 'pdf', 'quiz', 'assignment', 'post']),
+  "subject": zod.string(),
+  "grade": zod.string(),
+  "topic": zod.string(),
+  "publishedAt": zod.string(),
+  "views": zod.number().int(),
+  "duration": zod.string().nullish(),
+  "thumbnail": zod.string().nullish()
+})
+
+
+/**
+ * @summary Delete teacher content
+ */
+export const DeleteTeacherContentParams = zod.object({
+  "teacherId": zod.coerce.string(),
+  "contentId": zod.coerce.string()
+})
+
+export const DeleteTeacherContentResponse = zod.void()
+
+
+/**
+ * @summary Publish a short video to the student feed
+ */
+export const CreateTeacherShortVideoParams = zod.object({
+  "teacherId": zod.coerce.string()
+})
+
+export const CreateTeacherShortVideoBody = zod.object({
+  "title": zod.string(),
+  "subject": zod.string(),
+  "topic": zod.string(),
+  "duration": zod.string(),
+  "thumbnail": zod.string().optional()
+})
+
+export const CreateTeacherShortVideoResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "teacher": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "subject": zod.string(),
+  "grades": zod.array(zod.string()),
+  "bio": zod.string(),
+  "studentsCount": zod.number().int(),
+  "rating": zod.number(),
+  "avatar": zod.string(),
+  "verified": zod.boolean()
+}),
+  "subject": zod.string(),
+  "topic": zod.string(),
+  "thumbnail": zod.string(),
+  "duration": zod.string(),
+  "views": zod.number().int(),
+  "likes": zod.number().int(),
+  "saved": zod.boolean()
 })
 
 
